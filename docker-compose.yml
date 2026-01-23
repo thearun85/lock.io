@@ -1,7 +1,7 @@
 services:
   lock-node-1:
     build: .
-    image: lockio:latest
+    image: lockio:new
     container_name: lock-node-1
     environment:
       - SELF_ADDRESS=lock-node-1:4321
@@ -14,7 +14,7 @@ services:
       - lockio-net
 
   lock-node-2:
-    image: lockio:latest
+    image: lockio:new
     container_name: lock-node-2
     environment:
       - SELF_ADDRESS=lock-node-2:4322
@@ -29,7 +29,7 @@ services:
       - lock-node-1
 
   lock-node-3:
-    image: lockio:latest
+    image: lockio:new
     container_name: lock-node-3
     environment:
       - SELF_ADDRESS=lock-node-3:4323

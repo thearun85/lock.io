@@ -8,6 +8,15 @@ logging.basicConfig(level=logging.INFO)
 
 logger = logging.getLogger(__name__)
 
+_instance_locks = {}
+_locks_lock = threading.RLock()
+
+def _get_instance_lock(instance_id:int)->threading.RLock:
+    with _locks_lock:
+        if instance_id not in _instance_locks:
+            _instance_locks[instance_id] = threading.RLock()
+        return _instance_locks[instance_id]
+
 class LockService(SyncObj):
 
     def __init__(self, self_address: str, partner_addresses: list[str]):
@@ -19,17 +28,24 @@ class LockService(SyncObj):
             dynamicMembershipChange=True
         )
 
+        self.__instance_id = id(self)
+        
         super().__init__(self_address, partner_addresses, conf)
         # Lock service state container for replication
         self.__sessions: dict[str, dict] = {}
         self.__locks: dict[str, dict] = {}
         self.__fence_counter: int = 0
 
-        # Thread safety
-        self._SyncObj_lock = threading.RLock()
+        
+        
         logger.info(f"Lock service initialized with {self_address}")
         logger.info(f"Partners {partner_addresses}")
 
+    @property
+    def _lock(self)->threading.RLock:
+        return _get_instance_lock(self.__instance_id)
+    
+            
     def get_leader(self)->Optional[str]:
         """Wrapper for raft internal method"""
         leader = self._getLeader()
@@ -63,7 +79,7 @@ class LockService(SyncObj):
     def create_session(self, client_id: str, timeout:int = 60)->str:
         """Create a client session"""
         logger.info("Entering lock service create_session")
-        with self._SyncObj_lock:
+        with self._lock:
             session_id = str(uuid.uuid4())
             logger.info(f"Session ID is {session_id}")
             return self._create_session_internal(client_id, session_id, timeout, sync=True)
@@ -102,7 +118,7 @@ class LockService(SyncObj):
     
     def keepalive(self, session_id: str)->bool:
         """Update keepalive for a client session"""
-        with self._SyncObj_lock:
+        with self._lock:
             return self._keepalive_internal(session_id, sync=True)
 
     @replicated
@@ -126,7 +142,7 @@ class LockService(SyncObj):
 
     def delete_session(self, session_id: str)->bool:
         """Delete a client session"""
-        with self._SyncObj_lock:
+        with self._lock:
             
             return self._delete_session_internal(session_id, sync=True)
         
@@ -167,7 +183,7 @@ class LockService(SyncObj):
     def acquire_lock(self, session_id: str, resource:str)->Optional[int]:
         """Acquire a lock on the resource"""
         logging.info("Inside acquire_lock")
-        with self._SyncObj_lock:
+        with self._lock:
             return self._acquire_lock_internal(session_id, resource, sync=True)
 
     def get_lock_info(self, resource:str)->Optional[dict]:
@@ -201,7 +217,7 @@ class LockService(SyncObj):
             
     def release_lock(self, session_id:str, resource: str, fence_token:int)->bool:
         """Release the lock on a resource"""
-        with self._SyncObj_lock:
+        with self._lock:
             return self._release_lock_internal(session_id, resource, fence_token, sync=True)
 
     @replicated
@@ -226,7 +242,7 @@ class LockService(SyncObj):
 
     def release_expired_sessions(self)->int:
         """Release expired sessions and its locks"""
-        with self._SyncObj_lock:
+        with self._lock:
             return self._release_expired_sessions(sync=True)
 
     def get_stats(self)->dict:
