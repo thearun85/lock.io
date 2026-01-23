@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from datetime import datetime, timezone
 from typing import Optional
 from .config import get_node_config, get_api_port
@@ -14,7 +15,11 @@ lock_service = LockService(current_node, partner_nodes)
 def create_app():
 
     app = Flask(__name__)
-
+    CORS(app)
+    @app.route("/", methods=['GET'])
+    def dashboard():
+        return app.send_static_file("index.html")
+        
     @app.route("/health", methods=['GET'])
     def health_check():
         """Health check for the service"""
@@ -200,6 +205,21 @@ def create_app():
             **lock_info,
         }), 200
 
+    @app.route("/cluster/status", methods=['GET'])
+    def cluster_status():
+        status = lock_service.getStatus()
+        states = ["FOLLOWER", "CANDIDATE", "LEADER"]
+        
+        return jsonify({
+            "node": str(lock_service.selfNode),
+            "state": states[status['state']],
+            "leader": str(status['leader']) if status['leader'] else None,
+            "term": status['raft_term'],
+            "has_quorum": status['has_quorum'],
+            "is_ready": lock_service.is_ready(),
+            "uptime": status['uptime'],
+            "stats": lock_service.get_stats(),
+        })
     return app
 if __name__ == '__main__':
     app = create_app()

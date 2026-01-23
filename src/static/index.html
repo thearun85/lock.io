@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lock Service Cluster</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Lock Service Cluster</h1>
+        
+        <div class="cluster">
+            <div class="node" id="node-1">
+                <div class="node-header">Node 1</div>
+                <div class="node-state">LOADING</div>
+                <div class="node-term">Term: -</div>
+            </div>
+            <div class="node" id="node-2">
+                <div class="node-header">Node 2</div>
+                <div class="node-state">LOADING</div>
+                <div class="node-term">Term: -</div>
+            </div>
+            <div class="node" id="node-3">
+                <div class="node-header">Node 3</div>
+                <div class="node-state">LOADING</div>
+                <div class="node-term">Term: -</div>
+            </div>
+        </div>
+
+        <div class="stats">
+            <span id="stats-sessions">Sessions: -</span>
+            <span id="stats-locks">Locks: -</span>
+            <span id="stats-fence">Fence Token: -</span>
+        </div>
+
+        <div class="event-log">
+            <div class="event-log-header">Event Log</div>
+            <div class="event-log-content" id="event-log">
+                <div class="event">Waiting for events...</div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
