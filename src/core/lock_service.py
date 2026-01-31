@@ -9,6 +9,7 @@ class DistributedLockService:
     def __init__(self):
         """Initialize the lock service"""
         self.__sessions: dict[str, dict] = {}
+        self.__locks: dict[str, dict] = {}
 
 
     def _is_expired(self, session) -> bool:
