@@ -217,7 +217,7 @@ def test_get_non_existent_session_info():
     assert response.status_code == 404
     result = response.json()
     assert result['session_id'] == "4976734697873496"
-    assert result['error'] == "Session does not exist"
+    assert result['error'] == "Session 4976734697873496 does not exist"
 
 @pytest.mark.unit
 def test_keepalive_valid_session(valid_session):
@@ -238,12 +238,11 @@ def test_keepalive_expired_session(expired_session):
     response = requests.post(
         f"{SESSIONS_BASE_URL}/{session_id}/keepalive"
     )
-    assert response.status_code == 400
+    assert response.status_code == 410
     result = response.json()
     assert result['session_id'] == expired_session['session_id']
     assert result['updated'] == False
-    assert result['error'] == "Session does not exist/ already expired"
-
+    assert result['error'] == f"Session {session_id} has expired"
 @pytest.mark.unit
 def test_delete_valid_session(valid_session):
     """Test delete valid session"""
@@ -262,7 +261,7 @@ def test_delete_valid_session(valid_session):
     )
     assert response.status_code == 404
     result = response.json()
-    assert result["error"] == "Session does not exist"
+    assert result["error"] == f"Session {session_id} does not exist"
 
 @pytest.mark.unit
 def test_delete_non_existent_session():
@@ -275,5 +274,6 @@ def test_delete_non_existent_session():
     result = response.json()
     assert result['session_id'] == session_id
     assert result['deleted'] == False
-    assert result["error"] == "Session does not exist"
+    assert result["error"] == "Session 382658234648523 does not exist"
         
+

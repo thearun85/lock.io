@@ -3,6 +3,18 @@
 import uuid
 import time
 from datetime import datetime, timezone
+from src.core.errors import ErrorCode, ERROR_MESSAGES
+
+# Helper functions
+def ok(data=None):
+    """Create success result"""
+    return {"success": True, "data": data}
+
+def fail(err_cd, **format_args):
+    """Create error result"""
+    err_msg = ERROR_MESSAGES[err_cd]
+    err_msg = err_msg.format(**format_args)
+    return {"success": False, "err_cd": err_cd, "err_msg": err_msg}
 
 class DistributedLockService:
 
@@ -10,6 +22,7 @@ class DistributedLockService:
         """Initialize the lock service"""
         self.__sessions: dict[str, dict] = {}
         self.__locks: dict[str, dict] = {}
+        self.__fence_counter: int = 0 # to prevent stale sessions
 
 
     def _is_expired(self, session) -> bool:
@@ -30,44 +43,44 @@ class DistributedLockService:
             "locks_held": [], # Resources locked by this session
         }
 
-        return session_id
+        return ok(data=session_id)
 
     def get_session_info(self, session_id: str) -> dict | None:
         """Get session details as dict filter by session ID"""
         if session_id not in self.__sessions:
             print(f"[LockService] fetch session failed: session {session_id} not found")
-            return None
+            return fail(ErrorCode.SESSION_NOT_FOUND, session_id=session_id)
 
         session = self.__sessions[session_id].copy()
         session['is_expired'] = self._is_expired(self.__sessions[session_id])
         print(f"[LockService] fetch session {session_id}")
-        return session
+        return ok(data=session)
 
     def update_keepalive(self, session_id: str) -> bool:
         """Update keepalive timestamp for a session"""
         if session_id not in self.__sessions:
             print(f"[LockService] keepalive failed: session {session_id} not found")
-            return False
+            return fail(ErrorCode.SESSION_NOT_FOUND, session_id=session_id)
 
         
         if self._is_expired(self.__sessions[session_id]):
             print(f"[LockService] keepalive failed: session {session_id} expired")
-            return False
+            return fail(ErrorCode.SESSION_EXPIRED, session_id=session_id)
 
         self.__sessions[session_id]['last_keepalive'] = time.time()
         print(f"[LockService] keepalive success: session {session_id}")
-        return True
+        return ok()
 
     def delete_session(self, session_id: str) -> bool:
         """Delete a client session"""
         
         if session_id not in self.__sessions:
             print(f"[LockService] delete session failed: session {session_id} not found")
-            return False
+            return fail(ErrorCode.SESSION_NOT_FOUND, session_id= session_id)
 
         del self.__sessions[session_id]
         print(f"[LockService] session {session_id} deleted")
-        return True
+        return ok()
 
     def get_service_stats(self) -> dict:
         """Get the lock service statistics"""
@@ -82,3 +95,35 @@ class DistributedLockService:
             "expired_sessions": expired_sessions,
             "timestamp" : timestamp,
         }
+
+    def acquire_lock(self, session_id: str, resource: str) -> int | None:
+        """Acquire a lock on a resource if available"""
+        if session_id not in self.__sessions:
+            return None
+            print(f"acquire lock failed: session {session_id} does not exist")
+        session = self.__sessions[session_id]
+        if self._is_expired(session):
+            print(f"[LockService] acquire lock failed: session {session_id} expired")
+            return None
+            
+        if resource in self.__locks:
+            existing_lock = self.__locks[resource]
+            if existing_lock['session_id'] == session_id:
+                return existing_lock['fence_token']
+            print(f"[LockService] acquire lock failed: resource already locked by another session")
+            return None
+
+        fence_counter +=1
+        fence_token = fence_counter
+        self.__locks[resource] = {
+            "resource": resource,
+            "session_id": session_id,
+            "fence_token": fence_token,
+            "acquired_at": time.time(),
+        }
+        print(f"[LockService] lock acquired on resource {resource} by session {session_id}")
+        return fence_token
+
+
+
+        

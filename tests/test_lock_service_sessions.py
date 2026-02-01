@@ -22,61 +22,74 @@ def lock_service_with_session(lock_service) -> Generator[tuple[DistributedLockSe
     Returns:
         tuple(DistributedLockService, session_id)
     """
-    session_id = lock_service.create_session("client-1")
+    result = lock_service.create_session("client-1")
+    session_id = result['data']
 
     yield lock_service, session_id
 
     # Cleanup
-    if lock_service.get_session_info(session_id):
+    result = lock_service.get_session_info(session_id)
+    if result['success']:
         lock_service.delete_session(session_id)
 
 @pytest.mark.unit
 def test_create_valid_session(lock_service):
     """Test creating a session with client id and timeout"""
     print("Test valid session creation")
-    session_id = lock_service.create_session(client_id="client-1", timeout=90)
+    result = lock_service.create_session(client_id="client-1", timeout=90)
+    assert result['success'] is True
+    session_id = result['data']
     assert session_id is not None
     assert len(session_id) == 36
 
-    session = lock_service.get_session_info(session_id)
+    result = lock_service.get_session_info(session_id)
+    assert result['success'] == True
+    session = result['data']
     assert session['client_id'] == "client-1"
     assert session['timeout'] == 90
 
 @pytest.mark.unit
 def test_create_session_with_default_timeout(lock_service):
     """Test create session with default timeout"""
-    session_id = lock_service.create_session("client-1")
-    session = lock_service.get_session_info(session_id)
-
+    result = lock_service.create_session("client-1")
+    session_id = result['data']
+    result = lock_service.get_session_info(session_id)
+    session = result['data']
     assert session['timeout'] == 60
 
 @pytest.mark.unit
-def test_get_session_info(lock_service):
+def test_get_session_info(lock_service_with_session):
     """Test query session details"""
-    session_id = lock_service.create_session("client-1", timeout=100)
-    session = lock_service.get_session_info(session_id)
+    service, session_id = lock_service_with_session
+    result = service.get_session_info(session_id)
+    session = result['data']
     assert session['session_id'] == session_id
     assert session['client_id'] == "client-1"
-    assert session['timeout'] == 100
+    assert session['timeout'] == 60
     assert session.get('created_at') is not None
     assert session.get('last_keepalive') is not None
     assert session['locks_held'] == []
 
 @pytest.mark.unit
 def test_is_expired(lock_service):
-    session_id = lock_service.create_session("client-1", 2)
-    session = lock_service.get_session_info(session_id)
+    result = lock_service.create_session("client-1", 5)
+    session_id = result['data']
+    
+    result = lock_service.get_session_info(session_id)
+    session = result['data']
     assert session['is_expired'] == False
-    time.sleep(3)
-    session = lock_service.get_session_info(session_id)
+    
+    time.sleep(6)
+    result = lock_service.get_session_info(session_id)
+    session = result['data']
     assert session['is_expired'] == True
     
 @pytest.mark.unit
 def test_keepalive(lock_service_with_session):
     """Test update keepalive for a session"""
     service, session_id = lock_service_with_session
-    status = service.update_keepalive(session_id)
-    assert status == True
+    result = service.update_keepalive(session_id)
+    assert result['success'] == True
 
 @pytest.mark.unit
 def test_delete_session(lock_service_with_session):
@@ -84,12 +97,17 @@ def test_delete_session(lock_service_with_session):
     service, session_id = lock_service_with_session
 
     # Test deletion of valid session id
-    session = service.get_session_info(session_id)
+    result = service.get_session_info(session_id)
+    session = result['data']
     assert session['is_expired'] == False
-    status = service.delete_session(session_id)
-    assert status == True
-    session = service.get_session_info(session_id)
-    assert session is None
+    
+    result = service.delete_session(session_id)
+    assert result['success'] == True
 
-    status = service.delete_session(session_id)
-    assert status == False
+    
+    result = service.get_session_info(session_id)
+    assert result['success'] == False
+    
+    result = service.delete_session(session_id)
+    assert result['success'] == False
+

@@ -1,5 +1,6 @@
 """Distributed Lock Service - Public API for Sessions"""
 from flask import Blueprint, request, jsonify, current_app
+from src.core import ErrorCode, ERROR_HTTP_STATUS
 
 session_bp = Blueprint("sessions", __name__)
 
@@ -64,18 +65,22 @@ def create_session() -> dict:
         
     client_id = data.get('client_id').strip()
     timeout = data.get('timeout', 60)
-    session_id = get_lock_service().create_session(
+    result = get_lock_service().create_session(
         client_id=client_id, 
         timeout=timeout)
         
     keepalive_interval = timeout//3
-
-    return jsonify({
-        "session_id": session_id,
-        "client_id": client_id,
-        "timeout": timeout,
-        "keepalive_interval": keepalive_interval,
-    }), 201
+    if result['success']:
+        return jsonify({
+            "session_id": result['data'],
+            "client_id": client_id,
+            "timeout": timeout,
+            "keepalive_interval": keepalive_interval,
+        }), 201
+    else:
+        return jsonify({
+        "err_msg": "Session creation failed"
+    }), 500
 
 @session_bp.route("/sessions/<string:session_id>", methods=['GET'])
 def get_session_info(session_id: str) -> dict:
@@ -100,12 +105,15 @@ def get_session_info(session_id: str) -> dict:
                 "error": "str",
             }, 404
     """
-    session = get_lock_service().get_session_info(session_id)
-    if session is None:
+    result = get_lock_service().get_session_info(session_id)
+    if not result['success']:
+        status = ERROR_HTTP_STATUS.get(result['err_cd'], 400)
         return jsonify({
-            "error": "Session does not exist",
+            "error": result['err_msg'],
             "session_id": session_id,
-        }), 404
+        }), status
+
+    session = result['data']
     session['keepalive_interval'] = session['timeout']//3
     
     return jsonify(session), 200
@@ -128,13 +136,14 @@ def keepalive(session_id: str) -> dict:
             "error": "str"
         }, 404/ 400 # Session does not exist or session expired
     """
-    status = get_lock_service().update_keepalive(session_id)
-    if not status:
+    result = get_lock_service().update_keepalive(session_id)
+    if not result['success']:
+        status = ERROR_HTTP_STATUS.get(result['err_cd'], 400)
         return jsonify({
-            "error": "Session does not exist/ already expired",
+            "error": result['err_msg'],
             "session_id": session_id,
             "updated": False,
-        }), 400
+        }), status
 
     return jsonify({
         "updated": True,
@@ -159,13 +168,14 @@ def delete_session(session_id: str) -> dict:
             "error": "str"
         }, 404 # Session does not exist
     """
-    status = get_lock_service().delete_session(session_id)
-    if not status:
+    result = get_lock_service().delete_session(session_id)
+    if not result['success']:
+        status = ERROR_HTTP_STATUS.get(result['err_cd'], 400)
         return jsonify({
-            "error": "Session does not exist",
+            "error": result['err_msg'],
             "session_id": session_id,
             "deleted": False,
-        }), 404
+        }), status
 
     return jsonify({
         "deleted": True,
