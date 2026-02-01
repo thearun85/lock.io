@@ -30,7 +30,7 @@ class DistributedLockService:
         timesince_keepalive = time.time() - session['last_keepalive']
         return timesince_keepalive > session['timeout']
     
-    def create_session(self, client_id: str, timeout: int = 60):
+    def create_session(self, client_id: str, timeout: int = 60) -> dict:
         """Create a client session"""
         session_id = str(uuid.uuid4())
 
@@ -45,7 +45,7 @@ class DistributedLockService:
 
         return ok(data=session_id)
 
-    def get_session_info(self, session_id: str) -> dict | None:
+    def get_session_info(self, session_id: str) -> dict:
         """Get session details as dict filter by session ID"""
         if session_id not in self.__sessions:
             print(f"[LockService] fetch session failed: session {session_id} not found")
@@ -56,7 +56,7 @@ class DistributedLockService:
         print(f"[LockService] fetch session {session_id}")
         return ok(data=session)
 
-    def update_keepalive(self, session_id: str) -> bool:
+    def update_keepalive(self, session_id: str) -> dict:
         """Update keepalive timestamp for a session"""
         if session_id not in self.__sessions:
             print(f"[LockService] keepalive failed: session {session_id} not found")
@@ -71,7 +71,7 @@ class DistributedLockService:
         print(f"[LockService] keepalive success: session {session_id}")
         return ok()
 
-    def delete_session(self, session_id: str) -> bool:
+    def delete_session(self, session_id: str) -> dict:
         """Delete a client session"""
         
         if session_id not in self.__sessions:
@@ -96,25 +96,25 @@ class DistributedLockService:
             "timestamp" : timestamp,
         }
 
-    def acquire_lock(self, session_id: str, resource: str) -> int | None:
+    def acquire_lock(self, session_id: str, resource: str) -> dict:
         """Acquire a lock on a resource if available"""
         if session_id not in self.__sessions:
-            return None
             print(f"acquire lock failed: session {session_id} does not exist")
+            return fail(ErrorCode.SESSION_NOT_FOUND, session_id= session_id)
         session = self.__sessions[session_id]
         if self._is_expired(session):
             print(f"[LockService] acquire lock failed: session {session_id} expired")
-            return None
+            return fail(ErrorCode.SESSION_EXPIRED, session_id= session_id)
             
         if resource in self.__locks:
             existing_lock = self.__locks[resource]
             if existing_lock['session_id'] == session_id:
-                return existing_lock['fence_token']
+                return ok(data=existing_lock['fence_token'])
             print(f"[LockService] acquire lock failed: resource already locked by another session")
-            return None
+            return fail(ErrorCode.LOCK_ALREADY_HELD, resource=resource) 
 
-        fence_counter +=1
-        fence_token = fence_counter
+        self.__fence_counter +=1
+        fence_token = self.__fence_counter
         self.__locks[resource] = {
             "resource": resource,
             "session_id": session_id,
@@ -122,7 +122,41 @@ class DistributedLockService:
             "acquired_at": time.time(),
         }
         print(f"[LockService] lock acquired on resource {resource} by session {session_id}")
-        return fence_token
+        return ok(data=fence_token)
+
+    def release_lock(self, session_id: str, resource: str, fence_token: int) -> dict:
+        """Release a lock if owned by the session and if the fence_token is valid"""
+        if resource not in self.__locks:
+            print(f"[LockService] Lock release failed: no lock exists on the resource {resource}")
+            return fail(ErrorCode.LOCK_NOT_FOUND, resource=resource)
+
+        existing_lock = self.__locks[resource]
+        if existing_lock['fence_token'] != fence_token:
+            print(f"[LockService] Lock release failed: fence token mismatch")
+            return fail(ErrorCode.INVALID_FENCE_TOKEN, fence_token=fence_token)
+
+        if existing_lock['session_id'] != session_id:
+            print(f"[LockService] Lock release failed: session {session_id} does own the lock on the resource {resource}")
+            return fail(ErrorCode.LOCK_NOT_OWNED, session_id=session_id, resource=resource)
+
+        del self.__locks[resource]
+        session = self.__sessions[session_id]
+        if resource in session['locks_held']:
+            session['locks_held'].remove(resource)
+
+        print(f"[LockService] Lock on resource {resource} held by session {session_id} released")
+
+        return ok()
+
+    def lock_status(self, resource) -> dict:
+        """Check if a resource is locked and who holds"""
+        if resource not in self.__locks:
+            print(f"Lock status: There is currently no lock on the resource {resource}")
+            return ok(data=None)
+        existing_lock = self.__locks[resource]
+        print(f"Lock status: Resource {resource} is locked by session {session_id}")
+        return ok(data=existing_lock['session_id'])
+        
 
 
 

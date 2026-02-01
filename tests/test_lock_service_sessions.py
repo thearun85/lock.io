@@ -1,36 +1,5 @@
 import pytest
-from typing import Generator
 import time
-
-from src.core.lock_service import DistributedLockService
-
-@pytest.fixture
-def lock_service()-> Generator[DistributedLockService, None, None]:
-    """
-    Yield a fresh DistributedLockService for each test.
-
-    Provides automatic cleanup of service state.
-    """
-    svc = DistributedLockService()
-    yield svc
-
-@pytest.fixture
-def lock_service_with_session(lock_service) -> Generator[tuple[DistributedLockService, str], None, None]:
-    """
-    Yields a lock service with a pre-created session.
-
-    Returns:
-        tuple(DistributedLockService, session_id)
-    """
-    result = lock_service.create_session("client-1")
-    session_id = result['data']
-
-    yield lock_service, session_id
-
-    # Cleanup
-    result = lock_service.get_session_info(session_id)
-    if result['success']:
-        lock_service.delete_session(session_id)
 
 @pytest.mark.unit
 def test_create_valid_session(lock_service):
@@ -71,16 +40,10 @@ def test_get_session_info(lock_service_with_session):
     assert session['locks_held'] == []
 
 @pytest.mark.unit
-def test_is_expired(lock_service):
-    result = lock_service.create_session("client-1", 5)
-    session_id = result['data']
+def test_is_expired(lock_service_with_expired_session):
+    service, session_id = lock_service_with_expired_session
     
-    result = lock_service.get_session_info(session_id)
-    session = result['data']
-    assert session['is_expired'] == False
-    
-    time.sleep(6)
-    result = lock_service.get_session_info(session_id)
+    result = service.get_session_info(session_id)
     session = result['data']
     assert session['is_expired'] == True
     
