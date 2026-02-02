@@ -113,7 +113,7 @@ class DistributedLockService:
             print(f"[LockService] acquire lock failed: resource already locked by another session")
             return fail(ErrorCode.LOCK_ALREADY_HELD, resource=resource) 
 
-        self.__fence_counter +=1
+        self.__fence_counter += 1
         fence_token = self.__fence_counter
         self.__locks[resource] = {
             "resource": resource,

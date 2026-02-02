@@ -8,8 +8,10 @@ This module provides:
 """
 from src.api.health import health_bp
 from src.api.session import session_bp
+from src.api.lock import lock_bp
 
 __all__ = [
     'health_bp',
     'session_bp',
+    'lock_bp',
 ]

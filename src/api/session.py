@@ -8,7 +8,7 @@ def get_lock_service():
     """Helper to get lock service from app context"""
     return current_app.extensions['lock_service']
 
-def validate_create_session() -> str | None:
+def validate_create_session() -> tuple[str, dict|None]:
     """Validate create request and respond"""
     data = request.get_json()
     if data is None:
@@ -38,7 +38,7 @@ def validate_create_session() -> str | None:
     return "", data
 
 @session_bp.route("/sessions", methods=['POST'])
-def create_session() -> dict:
+def create_session():
     """
     Create a client session
     Request:
@@ -83,7 +83,7 @@ def create_session() -> dict:
     }), 500
 
 @session_bp.route("/sessions/<string:session_id>", methods=['GET'])
-def get_session_info(session_id: str) -> dict:
+def get_session_info(session_id: str):
     """
     Get client session details if it exists, as a dict
     
@@ -119,7 +119,7 @@ def get_session_info(session_id: str) -> dict:
     return jsonify(session), 200
 
 @session_bp.route("/sessions/<string:session_id>/keepalive", methods=['POST'])
-def keepalive(session_id: str) -> dict:
+def keepalive(session_id: str):
     """
     Extend the session lifetime
 
@@ -152,7 +152,7 @@ def keepalive(session_id: str) -> dict:
     
     
 @session_bp.route("/sessions/<string:session_id>", methods=['DELETE'])
-def delete_session(session_id: str) -> dict:
+def delete_session(session_id: str):
     """
     Delete a valid client session
     Response Success:
