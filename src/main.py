@@ -10,9 +10,10 @@ def create_app():
     lock_service = DistributedLockService()
     app.extensions['lock_service'] = lock_service
 
-    from src.api import health_bp, session_bp
+    from src.api import health_bp, session_bp, lock_bp
     app.register_blueprint(health_bp)
     app.register_blueprint(session_bp)
+    app.register_blueprint(lock_bp)
     return app
 
 if __name__ == '__main__':

@@ -5,28 +5,6 @@ import time
 
 SESSIONS_BASE_URL = "http://localhost:5000/sessions"
 
-@pytest.fixture
-def valid_session() -> Generator[dict, None, None]:
-    """Yield a new session for each test"""
-    response = requests.post(
-            url = f"{SESSIONS_BASE_URL}",
-            json={"client_id": "client-1", "timeout": 100}
-        )
-    assert response.status_code == 201
-    result = response.json()
-    yield result
-
-@pytest.fixture
-def expired_session() -> Generator[dict, None, None]:
-    """Yield a new session for each test"""
-    response = requests.post(
-            url = f"{SESSIONS_BASE_URL}",
-            json={"client_id": "client-1", "timeout": 5}
-        )
-    assert response.status_code == 201
-    result = response.json()
-    time.sleep(6)
-    yield result
 
 @pytest.mark.unit
 def test_create_session_with_valid_params():

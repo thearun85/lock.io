@@ -23,7 +23,7 @@ def validate_acquire_request(session_id: str, resource: str) -> str | None:
 
     return None
     
-@lock_bp.route("sessions/<string:session_id>/locks/<string:resource>", methods=['POST'])
+@lock_bp.route("/sessions/<string:session_id>/locks/<string:resource>", methods=['POST'])
 def acquire_lock(session_id: str, resource:str):
     """Acquire lock on a resource if available"""
     
@@ -32,7 +32,8 @@ def acquire_lock(session_id: str, resource:str):
         return jsonify({
             "error": error,
             "session_id": session_id,
-            "resource": resource
+            "resource": resource,
+            "acquired": False,
         }), 400
 
     svc = current_app.extensions['lock_service']
@@ -42,7 +43,8 @@ def acquire_lock(session_id: str, resource:str):
         return jsonify({
             "error": result['err_msg'],
             "session_id": session_id,
-            "resource": resource
+            "resource": resource,
+            "acquired": False,
         }), status
 
     fence_token = result['data']
@@ -68,7 +70,7 @@ def validate_release_request(session_id: str, resource: str) -> str | None:
     return None
 
 
-@lock_bp.route("sessions/<string:session_id>/locks/<string:resource>", methods=['POST'])
+@lock_bp.route("/sessions/<string:session_id>/locks/<string:resource>", methods=['POST'])
 def release_lock(session_id: str, resource:str):
     """Release the lock on a resource if it exists and is owned the session"""
     

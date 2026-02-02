@@ -76,9 +76,16 @@ class DistributedLockService:
         
         if session_id not in self.__sessions:
             print(f"[LockService] delete session failed: session {session_id} not found")
-            return fail(ErrorCode.SESSION_NOT_FOUND, session_id= session_id)
+            return fail(ErrorCode.SESSION_NOT_FOUND, session_id= session_id)    
 
+        session = self.__sessions[session_id]
+        for resource in session['locks_held']:
+            print(f"[LockService] delete session locks: session {session_id} {resource} found")
+            if resource in self.__locks:
+                print(f"[LockService] delete session locks: session {session_id} {resource} released")
+                del self.__locks[resource]
         del self.__sessions[session_id]
+        
         print(f"[LockService] session {session_id} deleted")
         return ok()
 
@@ -121,6 +128,7 @@ class DistributedLockService:
             "fence_token": fence_token,
             "acquired_at": time.time(),
         }
+        session['locks_held'].append(resource)
         print(f"[LockService] lock acquired on resource {resource} by session {session_id}")
         return ok(data=fence_token)
 
