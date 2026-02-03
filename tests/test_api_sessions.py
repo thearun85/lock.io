@@ -141,9 +141,9 @@ def test_create_session_with_timeout_not_an_integer():
     assert result["error"] == "timeout must be an integer"
 
 @pytest.mark.unit
-def test_create_session_with_empty_client_id():
+def test_create_session_with_empty_timeout():
     # Empty client_id
-    request = {"client_id": ""}
+    request = {"client_id": "client-1", "timeout": " "}
     response = requests.post(
         url = f"{SESSIONS_BASE_URL}",
         json=request
@@ -152,7 +152,7 @@ def test_create_session_with_empty_client_id():
     assert response.status_code == 400
     result = response.json()
     assert "error" in result
-    assert result["error"] == "client_id is required"
+    assert result["error"] == "timeout must be an integer"
 
 @pytest.mark.unit
 def test_get_valid_session_info(valid_session):

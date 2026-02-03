@@ -96,12 +96,13 @@ class DistributedLockService:
         expired_sessions = sum(1 for session in self.__sessions.values() if self._is_expired(session))
         timestamp = datetime.now(timezone.utc).isoformat()
 
-        return {
+        data = {
             "total_sessions": total_sessions,
             "active_sessions": active_sessions,
             "expired_sessions": expired_sessions,
             "timestamp" : timestamp,
         }
+        return ok(data=data)
 
     def acquire_lock(self, session_id: str, resource: str) -> dict:
         """Acquire a lock on a resource if available"""
@@ -162,10 +163,28 @@ class DistributedLockService:
             print(f"Lock status: There is currently no lock on the resource {resource}")
             return ok(data=None)
         existing_lock = self.__locks[resource]
-        print(f"Lock status: Resource {resource} is locked by session {session_id}")
+        print(f"Lock status: Resource {resource} is locked by session {existing_lock['session_id']}")
         return ok(data=existing_lock['session_id'])
         
-
+    def cleanup_expired_sessions(self) -> int:
+        """Delete all expired sessions and the associated locks and return the count of sessions cleared"""
+        start_time = time.time()
+        expired = []
+        cleaned = 0
+        for session_id, session in self.__sessions.items():
+            if (start_time - session['last_keepalive']) > session['timeout']:
+                expired.append(session_id)
+        for session_id in expired:
+            session = self.__sessions[session_id]
+            for resource in session['locks_held']:
+                if resource in self.__locks:
+                    print(f"[LockService] Lock on resource {resource} deleted due to session cleanup")
+                    del self.__locks[resource]
+            cleaned+=1
+            print(f"Session {session_id} deleted during expired session cleanup")
+            del self.__sessions[session_id]
+        return cleaned
+            
 
 
         

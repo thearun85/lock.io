@@ -74,3 +74,51 @@ def test_delete_session(lock_service_with_session):
     result = service.delete_session(session_id)
     assert result['success'] == False
 
+@pytest.mark.unit
+def test_create_session_with_lock(lock_service_with_same_session_lock):
+
+    svc, session_id, resource, fence_token = lock_service_with_same_session_lock
+
+    assert fence_token > 0
+    result = svc.get_session_info(session_id)
+    assert result['success'] == True
+    session = result['data']
+    assert len(session['locks_held']) == 1
+    lock = svc.lock_status(resource)
+    assert lock['data'] == session_id
+
+@pytest.mark.unit
+def test_delete_session_with_lock(lock_service_with_same_session_lock):
+
+    svc, session_id, resource, fence_token = lock_service_with_same_session_lock
+
+    assert fence_token > 0
+    result = svc.get_session_info(session_id)
+    assert result['success'] == True
+    session = result['data']
+    assert len(session['locks_held']) == 1
+    
+    lock = svc.lock_status(resource)
+    assert lock['data'] == session_id
+
+    result = svc.delete_session(session_id)
+    assert result['success'] == True
+
+    lock = svc.lock_status(resource)
+    assert lock['data'] is None
+    
+    
+@pytest.mark.unit
+def test_expired_session_cleanup(lock_service_with_expired_session):
+    service, session_id = lock_service_with_expired_session
+        
+    result = service.get_session_info(session_id)
+    session = result['data']
+    assert session['is_expired'] == True
+
+    result = service.get_service_stats()
+    assert result['success'] == True
+    data = result['data']
+    assert data['total_sessions'] > 0
+    count = service.cleanup_expired_sessions()
+    assert count > 0
