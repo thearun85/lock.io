@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset='utf-8'>
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>lock.io - Distributed Lock Service</title>
+	<link rel="stylesheet" href="styles.css">
+	<script src="dashboard.js" defer></script>
+</head>
+<body>
+	<header>
+		<h1>lock.io</h1>
+		<div id="connection-status">
+			<span id="status-indicator">●</span>
+			<span id="status-text">Disconnected</span>
+		</div>
+	</header>
+	<main>
+		<section id="cluster">
+			<h2>Cluster</h2>
+			<div id="nodes-container">
+				<div class="node-card leader">
+					<div class="node-header">
+						<span class="node-name">lock-node-1</span>
+						<span class="node-role">LEADER</span>
+					</div>
+					<div class="node-info">
+						<div class="node-info-item">
+							<span class="node-info-label">Health:</span>
+							<span>Healthy</span>
+						</div>
+						<div class="node-info-item">
+							<span class="node-info-label">Term:</span>
+							<span>5</span>
+						</div>
+						<div class="node-info-item">
+							<span class="node-info-label">Uptime:</span>
+							<span>2h 34m</span>
+						</div>
+					</div>
+				</div>
+				<div class="node-card follower">
+					<div class="node-header">
+						<span class="node-name">lock-node-2</span>
+						<span class="node-role">FOLLOWER</span>
+					</div>
+					<div class="node-info">
+						<div class="node-info-item">
+							<span class="node-info-label">Health:</span>
+							<span>Healthy</span>
+						</div>
+						<div class="node-info-item">
+							<span class="node-info-label">Term:</span>
+							<span>5</span>
+						</div>
+						<div class="node-info-item">
+							<span class="node-info-label">Uptime:</span>
+							<span>2h 34m</span>
+						</div>
+					</div>
+				</div>
+				<div class="node-card follower">
+					<div class="node-header">
+						<span class="node-name">lock-node-3</span>
+						<span class="node-role">FOLLOWER</span>
+					</div>
+					<div class="node-info">
+						<div class="node-info-item">
+							<span class="node-info-label">Health:</span>
+							<span>Healthy</span>
+						</div>
+						<div class="node-info-item">
+							<span class="node-info-label">Term:</span>
+							<span>5</span>
+						</div>
+						<div class="node-info-item">
+							<span class="node-info-label">Uptime:</span>
+							<span>2h 34m</span>
+						</div>
+					</div>
+				</div>
+
+			</div>
+		</section>
+		
+		<section id="metrics">
+			<h2>Metrics</h2>
+			<div id="metrics-container">
+			<div class="metric">
+			    <div class="metric-label">SESSIONS</div>
+			    <div class="metric-value" id="metric-sessions">7</div>
+			</div>
+			<div class="metric-divider"></div>
+			
+			<div class="metric">
+			    <div class="metric-label">LOCKS</div>
+			    <div class="metric-value" id="metric-locks">12</div>
+			</div>
+			<div class="metric-divider"></div>
+			
+			<div class="metric">
+			    <div class="metric-label">FENCE TOKEN</div>
+			    <div class="metric-value" id="metric-fence">156</div>
+			</div>
+			<div class="metric-divider"></div>
+			
+			<div class="metric">
+			    <div class="metric-label">OPS/SEC</div>
+			    <div class="metric-value" id="metric-ops">45</div>
+			</div>
+			<div class="metric-divider"></div>
+			
+			<div class="metric">
+			    <div class="metric-label">UPTIME</div>
+			    <div class="metric-value" id="metric-uptime">2d 5h</div>
+			</div>
+			</div>
+		</section>
+
+		<section id='events'>
+			<h2>Live Events</h2>
+				<div id="events-container">
+				    <!-- Events will be added dynamically -->
+				</div>		
+		</section>
+		
+	</main>
+</body>
+</html>

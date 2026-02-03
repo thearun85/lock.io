@@ -1,11 +1,12 @@
 """Distributed Lock Service public API"""
 from flask import Flask
-
+from flask_cors import CORS
 from src.core import DistributedLockService, get_node_config, get_api_port
 
 def create_app():
 
     app = Flask(__name__)
+    CORS(app)
     self_address, partner_addresses = get_node_config()
     lock_service = DistributedLockService(self_address, partner_addresses)
     app.extensions['lock_service'] = lock_service

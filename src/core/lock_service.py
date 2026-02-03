@@ -263,6 +263,8 @@ class DistributedLockService(SyncObj):
     def get_cluster_status(self) -> dict:
         """Get the statistics of the raft cluster"""
         result = self.getStatus()
+        stats = self.get_service_stats()
+        stats = stats['data']
         states = ["FOLLOWER", "CANDIDATE", "LEADER"]
         status = {
             "node": str(self.selfNode),
@@ -274,6 +276,10 @@ class DistributedLockService(SyncObj):
             "term": result['raft_term'],
             "uptime": result['uptime'],
             "no_of_nodes": len(self.otherNodes)+1,
+            "total_sessions": stats['total_sessions'],
+            "total_locks": stats['total_locks'],
+            "fence_counter": stats['fence_counter'],
+            
         }
 
         return status
