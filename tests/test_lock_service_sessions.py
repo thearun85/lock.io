@@ -122,3 +122,17 @@ def test_expired_session_cleanup(lock_service_with_expired_session):
     assert data['total_sessions'] > 0
     count = service.cleanup_expired_sessions()
     assert count > 0
+
+@pytest.mark.unit
+def test_service_stats(lock_service_with_session, lock_service_with_expired_session, lock_service_with_same_session_lock):
+    service1, session_id1 = lock_service_with_session
+    service2, session_id2 = lock_service_with_expired_session
+    service3, session_i3, resourc3, fence_toke3 = lock_service_with_same_session_lock
+    
+    result = service1.get_service_stats()
+    assert result['success'] == True
+    data = result['data']
+    assert data['total_sessions'] > 0
+    assert data['expired_sessions'] > 0
+    assert data['fence_counter'] > 0
+    assert data['total_locks'] > 0
