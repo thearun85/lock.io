@@ -1,10 +1,13 @@
 import pytest
 import time
+import logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 @pytest.mark.unit
 def test_create_valid_session(lock_service):
     """Test creating a session with client id and timeout"""
-    print("Test valid session creation")
+    logger.info("Test valid session creation")
     result = lock_service.create_session(client_id="client-1", timeout=90)
     assert result['success'] is True
     session_id = result['data']

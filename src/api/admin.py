@@ -10,7 +10,7 @@ def cleanup() -> int:
     svc = current_app.extensions['lock_service']
     cleaned = svc.cleanup_expired_sessions()
     return jsonify(cleaned), 200
-    print(f"Session deleted {count} during cleanup")
+    print(f"Session deleted {cleaned} during cleanup")
 
 @admin_bp.route("/admin/stats", methods=['GET'])
 def get_stats() -> dict:
@@ -19,3 +19,12 @@ def get_stats() -> dict:
     stats = svc.get_service_stats()
 
     return jsonify(stats), 200
+
+@admin_bp.route("/admin/cluster", methods=['GET'])
+def get_cluster_status() -> dict:
+    """Get RAFT cluster status"""
+    svc = current_app.extensions['lock_service']
+    status = svc.get_cluster_status()
+
+    return jsonify(status), 200
+    

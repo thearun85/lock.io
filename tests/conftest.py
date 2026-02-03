@@ -14,7 +14,7 @@ def lock_service()-> Generator[DistributedLockService, None, None]:
 
     Provides automatic cleanup of service state.
     """
-    svc = DistributedLockService()
+    svc = DistributedLockService("localhost:4321", [])
     yield svc
 
 @pytest.fixture
